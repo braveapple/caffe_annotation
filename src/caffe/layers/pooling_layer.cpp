@@ -132,6 +132,7 @@ void PoolingLayer<Dtype>::Reshape(const vector<Blob<Dtype>*>& bottom,
   // 如果是随机池化，则初始化随机池化索引
   if (this->layer_param_.pooling_param().pool() ==
       PoolingParameter_PoolMethod_STOCHASTIC) {
+    // 将 rand_idx_ 变形为 (num, channels, pooled_height, width)
     rand_idx_.Reshape(bottom[0]->num(), channels_, pooled_height_,
       pooled_width_);
   }
@@ -142,8 +143,11 @@ void PoolingLayer<Dtype>::Reshape(const vector<Blob<Dtype>*>& bottom,
 template <typename Dtype>
 void PoolingLayer<Dtype>::Forward_cpu(const vector<Blob<Dtype>*>& bottom,
       const vector<Blob<Dtype>*>& top) {
+  // 获取只读 bottom_data 的指针
   const Dtype* bottom_data = bottom[0]->cpu_data();
+  // 获取读写 top_data 的指针
   Dtype* top_data = top[0]->mutable_cpu_data();
+  // 计算 top_data 的元素个数
   const int top_count = top[0]->count();
   // We'll output the mask to top[1] if it's of size >1.
   const bool use_top_mask = top.size() > 1;
