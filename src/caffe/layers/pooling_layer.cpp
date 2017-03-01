@@ -129,6 +129,7 @@ void PoolingLayer<Dtype>::Reshape(const vector<Blob<Dtype>*>& bottom,
         pooled_width_);
   }
   // If stochastic pooling, we will initialize the random index part.
+  // 如果是随机池化，则初始化随机池化索引
   if (this->layer_param_.pooling_param().pool() ==
       PoolingParameter_PoolMethod_STOCHASTIC) {
     rand_idx_.Reshape(bottom[0]->num(), channels_, pooled_height_,
