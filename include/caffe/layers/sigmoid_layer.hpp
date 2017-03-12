@@ -19,12 +19,17 @@ namespace caffe {
  * Note that the gradient vanishes as the values move away from 0.
  * The ReLULayer is often a better choice for this reason.
  */
+
+// 这是一个 sigmoid 函数，是非线性的。
+// 但是当输入值远离 0 时，会出现梯度消失的现象
+// 因此，我们建议使用 ReLU 层 
 template <typename Dtype>
 class SigmoidLayer : public NeuronLayer<Dtype> {
  public:
+  // 显示构造函数
   explicit SigmoidLayer(const LayerParameter& param)
       : NeuronLayer<Dtype>(param) {}
-
+  // 返回层的名称
   virtual inline const char* type() const { return "Sigmoid"; }
 
  protected:

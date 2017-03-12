@@ -40,7 +40,7 @@ def get_start_time(line_iterable, year):
             break
     return start_datetime
 
-
+# 提取过去运行时间，单位为秒
 def extract_seconds(input_file, output_file):
     with open(input_file, 'r') as f:
         lines = f.readlines()

@@ -22,12 +22,14 @@ def parse_log(path_to_log):
     rows
     """
 
+    # 设置正则化表达式
     regex_iteration = re.compile('Iteration (\d+)')
     regex_train_output = re.compile('Train net output #(\d+): (\S+) = ([\.\deE+-]+)')
     regex_test_output = re.compile('Test net output #(\d+): (\S+) = ([\.\deE+-]+)')
     regex_learning_rate = re.compile('lr = ([-+]?[0-9]*\.?[0-9]+([eE]?[-+]?[0-9]+)?)')
 
     # Pick out lines of interest
+    # 选出我们感兴趣的行
     iteration = -1
     learning_rate = float('NaN')
     train_dict_list = []
@@ -43,20 +45,26 @@ def parse_log(path_to_log):
         for line in f:
             iteration_match = regex_iteration.search(line)
             if iteration_match:
+                # group(0) 是获取整个匹配字符串；group(1) 是获取匹配字符串中（）中的内容
+                # 比如，m = re.match(r'www\.(.+)\.com', 'www.google.com')
+                # m.group(0) 输出 www.google.com
+                # m.group(1) 输出 google
                 iteration = float(iteration_match.group(1))
             if iteration == -1:
                 # Only start parsing for other stuff if we've found the first
                 # iteration
+                # 只有我们找到第一个 iteration, 我们才开始解析其他 stuff
                 continue
 
             try:
-                time = extract_seconds.extract_datetime_from_line(line,
-                                                                  logfile_year)
+                time = extract_seconds.extract_datetime_from_line(line, logfile_year)
             except ValueError:
                 # Skip lines with bad formatting, for example when resuming solver
+                # 跳过匹配错误的行，比如重新启动的 solver
                 continue
 
             # if it's another year
+            # 如果出现跨年的情况
             if time.month < last_time.month:
                 logfile_year += 1
                 time = extract_seconds.extract_datetime_from_line(line, logfile_year)

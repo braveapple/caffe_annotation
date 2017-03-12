@@ -35,14 +35,15 @@ grep 'Test net output #1' aux.txt | awk '{print $11}' > aux2.txt
 
 # Extracting elapsed seconds
 # For extraction of time since this line contains the start time
-# 
+# 提取已过去的时间
 grep '] Solving ' $1 > aux3.txt
 grep 'Testing net' $1 >> aux3.txt
 $DIR/extract_seconds.py aux3.txt aux4.txt
 
 # Generating
+# 生成 test 文件
 echo '#Iters Seconds TestAccuracy TestLoss'> $LOG.test
-paste aux0.txt aux4.txt aux1.txt aux2.txt | column -t >> $LOG.test
+paste aux0.txt aux4.txt aux1.txt aux2.txt | column -t >> $LOG.test # 合并文件的列
 rm aux.txt aux0.txt aux1.txt aux2.txt aux3.txt aux4.txt
 
 # For extraction of time since this line contains the start time
@@ -56,6 +57,7 @@ grep ', lr = ' $1 | awk '{print $9}' > aux2.txt
 $DIR/extract_seconds.py aux.txt aux3.txt
 
 # Generating
+# 生成 train 文件
 echo '#Iters Seconds TrainingLoss LearningRate'> $LOG.train
 paste aux0.txt aux3.txt aux1.txt aux2.txt | column -t >> $LOG.train
 rm aux.txt aux0.txt aux1.txt aux2.txt  aux3.txt

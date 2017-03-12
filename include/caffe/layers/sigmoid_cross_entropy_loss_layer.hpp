@@ -44,15 +44,18 @@ namespace caffe {
 template <typename Dtype>
 class SigmoidCrossEntropyLossLayer : public LossLayer<Dtype> {
  public:
+  // 显示构造函数，内嵌了 Sigmoid Layer
   explicit SigmoidCrossEntropyLossLayer(const LayerParameter& param)
       : LossLayer<Dtype>(param),
           sigmoid_layer_(new SigmoidLayer<Dtype>(param)),
           sigmoid_output_(new Blob<Dtype>()) {}
+  // 层初始化设置函数
   virtual void LayerSetUp(const vector<Blob<Dtype>*>& bottom,
       const vector<Blob<Dtype>*>& top);
+  // 变形函数
   virtual void Reshape(const vector<Blob<Dtype>*>& bottom,
       const vector<Blob<Dtype>*>& top);
-
+  // 返回该层的类型名称
   virtual inline const char* type() const { return "SigmoidCrossEntropyLoss"; }
 
  protected:
@@ -101,23 +104,39 @@ class SigmoidCrossEntropyLossLayer : public LossLayer<Dtype> {
   /// on the blob size.  If normalization_mode is VALID, the count of valid
   /// outputs will be read from valid_count, unless it is -1 in which case
   /// all outputs are assumed to be valid.
+
+  // 读取 normalization 模式的参数，根据 blob 的尺寸计算归一化
+  // 如果 normalization_mode 是 VALID，那么函数就会读取 VALID 个数据
+  // 如果 normalization_mode 设置为 -1, 那么就会读取所有的数据
   virtual Dtype get_normalizer(
       LossParameter_NormalizationMode normalization_mode, int valid_count);
 
   /// The internal SigmoidLayer used to map predictions to probabilities.
+  // 内嵌的 Sigmoid Layer 用将预测值映射为概率值
   shared_ptr<SigmoidLayer<Dtype> > sigmoid_layer_;
+
   /// sigmoid_output stores the output of the SigmoidLayer.
+  // 存储 Sigmoid Layer 的输出值
   shared_ptr<Blob<Dtype> > sigmoid_output_;
+
   /// bottom vector holder to call the underlying SigmoidLayer::Forward
+  // 用于存储所有的 bottom 的值，输入 SigmoildLayer::Forward 函数
   vector<Blob<Dtype>*> sigmoid_bottom_vec_;
+
   /// top vector holder to call the underlying SigmoidLayer::Forward
+  // 用于存储所有的 top 的值，是 SigmoidLayer::Forward 函数的输出
   vector<Blob<Dtype>*> sigmoid_top_vec_;
 
   /// Whether to ignore instances with a certain label.
+  // 是否要忽略有确切的 label 的实例
   bool has_ignore_label_;
+
   /// The label indicating that an instance should be ignored.
+  // 该标签 label 表示这个 instance 需要被忽略
   int ignore_label_;
+
   /// How to normalize the loss.
+  // 指明如何归一化损失值
   LossParameter_NormalizationMode normalization_;
   Dtype normalizer_;
   int outer_num_, inner_num_;
