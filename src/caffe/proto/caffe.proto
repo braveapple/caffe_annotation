@@ -1,4 +1,4 @@
-史syntax = "proto2";
+syntax = "proto2";
 
 package caffe;
 
@@ -291,22 +291,28 @@ message ParamSpec {
   // The names of the parameter blobs -- useful for sharing parameters among
   // layers, but never required otherwise.  To share a parameter between two
   // layers, give it a (non-empty) name.
+  // 设置特殊参数的名称，这样可以共享参数
   optional string name = 1;
 
   // Whether to require shared weights to have the same shape, or just the same
   // count -- defaults to STRICT if unspecified.
+  // 设置分享权重的检查模式 {STRICT, PERMISSIVE}
   optional DimCheckMode share_mode = 2;
   enum DimCheckMode {
     // STRICT (default) requires that num, channels, height, width each match.
+    // 检查每个维度是否一致
     STRICT = 0;
+    // 检查元素数目是否一样
     // PERMISSIVE requires only the count (num*channels*height*width) to match.
     PERMISSIVE = 1;
   }
 
   // The multiplier on the global learning rate for this parameter.
+  // 该参数乘以全局的学习率得到本地的学习率
   optional float lr_mult = 3 [default = 1.0];
 
   // The multiplier on the global weight decay for this parameter.
+  // 该参数乘以全局的衰减系数得到本地的衰减系数
   optional float decay_mult = 4 [default = 1.0];
 }
 
@@ -531,11 +537,15 @@ message BatchNormParameter {
   // If false, accumulate global mean/variance values via a moving average. If
   // true, use those accumulated values instead of computing mean/variance
   // across the batch.
+  // 如果为假，采用滑动平均对全局的均值和方差进行累加。如果为真，则使用全局的均值
+  // 和方差，而不是使用每个 batch 的均值和方差
   optional bool use_global_stats = 1;
   // How much does the moving average decay each iteration?
+  // 滑动平均的衰减系数，默认为 0.999
   optional float moving_average_fraction = 2 [default = .999];
   // Small value to add to the variance estimate so that we don't divide by
   // zero.
+  // 分母的附加值，防止除 0 的情况，默认值为 1e-5
   optional float eps = 3 [default = 1e-5];
 }
 

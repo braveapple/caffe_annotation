@@ -36,16 +36,27 @@ namespace caffe {
  *
  * TODO(dox): thorough documentation for Forward, Backward, and proto params.
  */
+
+// 主要实现的是将上一层的数据归一化为均值为 0，方差为 1
+// 在默认情况下，在训练过程中，网络通过计算整个训练数据集的均值和方差，然后将这两个
+// 参数用于测试阶段输出确切的结果。你可以手动设置 "use_global_stats" 选项来决定是否
+// 使用全局的统计特性。这些统计特性存储在三个 blob 中 (0) mean, (1) variance, 
+// (2) moving average factor
+// 注意的是， BatchNormLayer 只实现了归一化的阶段，要在该层后面跟上 ScaleLayer 实现 
+// Scale 和 Shift (设置 bias_term: true) 
 template <typename Dtype>
 class BatchNormLayer : public Layer<Dtype> {
  public:
+  // 显示构造函数
   explicit BatchNormLayer(const LayerParameter& param)
       : Layer<Dtype>(param) {}
+  // 层设置函数
   virtual void LayerSetUp(const vector<Blob<Dtype>*>& bottom,
       const vector<Blob<Dtype>*>& top);
+  // 层变形函数
   virtual void Reshape(const vector<Blob<Dtype>*>& bottom,
       const vector<Blob<Dtype>*>& top);
-
+  // 返回层的类型名称
   virtual inline const char* type() const { return "BatchNorm"; }
   virtual inline int ExactNumBottomBlobs() const { return 1; }
   virtual inline int ExactNumTopBlobs() const { return 1; }
@@ -60,10 +71,15 @@ class BatchNormLayer : public Layer<Dtype> {
   virtual void Backward_gpu(const vector<Blob<Dtype>*>& top,
      const vector<bool>& propagate_down, const vector<Blob<Dtype>*>& bottom);
 
+  // 均值、方差、中间值、归一化值
   Blob<Dtype> mean_, variance_, temp_, x_norm_;
+  // 如果为假，采用滑动平均对全局的均值和方差进行累加。如果为真，则使用全局的均值
+  // 和方差，而不是使用每个 batch 的均值和方差
   bool use_global_stats_;
+  // 滑动平均的衰减系数，默认为 0.999
   Dtype moving_average_fraction_;
   int channels_;
+  // 分母的附加值，防止除 0 的情况，默认值为 1e-5
   Dtype eps_;
 
   // extra temporarary variables is used to carry out sums/broadcasting
