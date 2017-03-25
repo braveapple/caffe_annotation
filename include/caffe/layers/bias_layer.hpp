@@ -18,13 +18,20 @@ namespace caffe {
  * of the layer. Note: in case bias and scaling are desired, both operations can
  * be handled by `ScaleLayer` configured with `bias_term: true`.
  */
+
+// 计算两个输入 blob 的和，并且要将 latter Blob 的尺寸扩展与 former Blob 的尺寸一致
+// 均匀地扩展 latter Blob，然后计算 elementwise 和
+// 注意：第二个输入 blob 可能会被忽略，如果它是该层的学习参数
 template <typename Dtype>
 class BiasLayer : public Layer<Dtype> {
  public:
+  // 显示构造函数
   explicit BiasLayer(const LayerParameter& param)
       : Layer<Dtype>(param) {}
+  // 层设置函数
   virtual void LayerSetUp(const vector<Blob<Dtype>*>& bottom,
       const vector<Blob<Dtype>*>& top);
+  // 层变形函数
   virtual void Reshape(const vector<Blob<Dtype>*>& bottom,
       const vector<Blob<Dtype>*>& top);
 
@@ -43,7 +50,7 @@ class BiasLayer : public Layer<Dtype> {
       const vector<bool>& propagate_down, const vector<Blob<Dtype>*>& bottom);
 
  private:
-  Blob<Dtype> bias_multiplier_;
+  Blob<Dtype> bias_multiplier_; 
   int outer_dim_, bias_dim_, inner_dim_, dim_;
 };
 

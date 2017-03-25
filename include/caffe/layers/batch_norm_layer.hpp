@@ -84,8 +84,11 @@ class BatchNormLayer : public Layer<Dtype> {
 
   // extra temporarary variables is used to carry out sums/broadcasting
   // using BLAS
+  // 维度是 (batch_size, )
   Blob<Dtype> batch_sum_multiplier_;
+  // 维度是 (batch_size, channels)
   Blob<Dtype> num_by_chans_;
+  // 维度是 (height, width)
   Blob<Dtype> spatial_sum_multiplier_;
 };
 
