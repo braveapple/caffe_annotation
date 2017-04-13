@@ -26,10 +26,13 @@ class AccuracyLayer : public Layer<Dtype> {
    *     correct.  For example, if @f$ k = 5 @f$, a prediction is counted
    *     correct if the correct label is among the top 5 predicted labels.
    */
+  // 显示构造函数
   explicit AccuracyLayer(const LayerParameter& param)
       : Layer<Dtype>(param) {}
+  // 层设置函数
   virtual void LayerSetUp(const vector<Blob<Dtype>*>& bottom,
       const vector<Blob<Dtype>*>& top);
+  // 层变形函数
   virtual void Reshape(const vector<Blob<Dtype>*>& bottom,
       const vector<Blob<Dtype>*>& top);
 
@@ -38,6 +41,7 @@ class AccuracyLayer : public Layer<Dtype> {
 
   // If there are two top blobs, then the second blob will contain
   // accuracies per class.
+  // 如果有两个输出的 blob，那么第二个 blob 存储了每类的准确率
   virtual inline int MinTopBlobs() const { return 1; }
   virtual inline int MaxTopBlobs() const { return 2; }
 
@@ -83,10 +87,13 @@ class AccuracyLayer : public Layer<Dtype> {
   int top_k_;
 
   /// Whether to ignore instances with a certain label.
+  // 是否要忽视某个 label
   bool has_ignore_label_;
   /// The label indicating that an instance should be ignored.
+  // 如果有这个 label 那么该实例就会被忽视。
   int ignore_label_;
   /// Keeps counts of the number of samples per class.
+  // 保存每类样本的数量
   Blob<Dtype> nums_buffer_;
 };
 

@@ -10,12 +10,18 @@ __global__ void Slice(const int nthreads, const Dtype* in_data,
     const bool forward, const int num_slices, const int slice_size,
     const int bottom_slice_axis, const int top_slice_axis,
     const int offset_slice_axis, Dtype* out_data) {
+
+  // 相当于是 for(int index = 0; index < nthreads; index++) { loop body}
+  // 这里的每个 loop body 是互不影响，相互独立的。
+
+  // index 是迭代器，代表 top blob 里面每个元素的索引值
+  // nthreads 是线程的总数，代表 top blob 里面所有元素的数量
   CUDA_KERNEL_LOOP(index, nthreads) {
-    const int total_slice_size = slice_size * top_slice_axis;
-    const int slice_num = index / total_slice_size;
-    const int slice_index = index % total_slice_size;
+    const int total_slice_size = slice_size * top_slice_axis; // 计算每一块 top blob 的分块大小
+    const int slice_num = index / total_slice_size; // 计当前 top blob 的 slice_num
+    const int slice_index = index % total_slice_size; // 计算当前块的 slice_index，
     const int bottom_index = slice_index +
-        (slice_num * bottom_slice_axis + offset_slice_axis) * slice_size;
+      (slice_num * bottom_slice_axis + offset_slice_axis) * slice_size;
     if (forward) {
       out_data[index] = in_data[bottom_index];
     } else {
@@ -30,16 +36,16 @@ void SliceLayer<Dtype>::Forward_gpu(const vector<Blob<Dtype>*>& bottom,
   if (top.size() == 1) { return; }
   int offset_slice_axis = 0;
   const Dtype* bottom_data = bottom[0]->gpu_data();
-  const int bottom_slice_axis = bottom[0]->shape(slice_axis_);
+  const int bottom_slice_axis = bottom[0]->shape(this->slice_axis_);
   const bool kForward = true;
   for (int i = 0; i < top.size(); ++i) {
     Dtype* top_data = top[i]->mutable_gpu_data();
-    const int top_slice_axis = top[i]->shape(slice_axis_);
-    const int top_slice_size = top_slice_axis * slice_size_;
-    const int nthreads = top_slice_size * num_slices_;
+    const int top_slice_axis = top[i]->shape(this->slice_axis_);
+    const int top_slice_size = top_slice_axis * this->slice_size_;
+    const int nthreads = top_slice_size * this->num_slices_; // 计算可并行的线程数
     Slice<Dtype>  // NOLINT_NEXT_LINE(whitespace/operators)
         <<<CAFFE_GET_BLOCKS(nthreads), CAFFE_CUDA_NUM_THREADS>>>(
-        nthreads, bottom_data, kForward, num_slices_, slice_size_,
+        nthreads, bottom_data, kForward, this->num_slices_, this->slice_size_,
         bottom_slice_axis, top_slice_axis, offset_slice_axis, top_data);
     offset_slice_axis += top_slice_axis;
   }
@@ -51,16 +57,16 @@ void SliceLayer<Dtype>::Backward_gpu(const vector<Blob<Dtype>*>& top,
   if (!propagate_down[0] || top.size() == 1) { return; }
   int offset_slice_axis = 0;
   Dtype* bottom_diff = bottom[0]->mutable_gpu_diff();
-  const int bottom_slice_axis = bottom[0]->shape(slice_axis_);
+  const int bottom_slice_axis = bottom[0]->shape(this->slice_axis_);
   const bool kForward = false;
   for (int i = 0; i < top.size(); ++i) {
     const Dtype* top_diff = top[i]->gpu_diff();
-    const int top_slice_axis = top[i]->shape(slice_axis_);
-    const int top_slice_size = top_slice_axis * slice_size_;
-    const int nthreads = top_slice_size * num_slices_;
+    const int top_slice_axis = top[i]->shape(this->slice_axis_);
+    const int top_slice_size = top_slice_axis * this->slice_size_;
+    const int nthreads = top_slice_size * this->num_slices_;
     Slice<Dtype>  // NOLINT_NEXT_LINE(whitespace/operators)
         <<<CAFFE_GET_BLOCKS(nthreads), CAFFE_CUDA_NUM_THREADS>>>(
-        nthreads, top_diff, kForward, num_slices_, slice_size_,
+        nthreads, top_diff, kForward, this->num_slices_, this->slice_size_,
         bottom_slice_axis, top_slice_axis, offset_slice_axis, bottom_diff);
     offset_slice_axis += top_slice_axis;
   }

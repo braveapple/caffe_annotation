@@ -13,20 +13,20 @@ void BatchNormLayer<Dtype>::LayerSetUp(const vector<Blob<Dtype>*>& bottom,
   // 读取层的参数
   BatchNormParameter param = this->layer_param_.batch_norm_param();
   // 获取滑动平均衰减系数
-  moving_average_fraction_ = param.moving_average_fraction();
+  this->moving_average_fraction_ = param.moving_average_fraction();
   // 对测试阶段 use_global_stats_ 默认为真
-  use_global_stats_ = this->phase_ == TEST;
+  this->use_global_stats_ = this->phase_ == TEST;
   if (param.has_use_global_stats())
     // 如果有 use_global_states 参数，则将修改 use_global_stats_
-    use_global_stats_ = param.use_global_stats();
+    this->use_global_stats_ = param.use_global_stats();
   if (bottom[0]->num_axes() == 1)
     // 如果 bottom blob 的轴数为 1，那么设置 channels_ 为 1
-    channels_ = 1;
+    this->channels_ = 1;
   else
     // 否则就正常读取 channels_ 值
-    channels_ = bottom[0]->shape(1);
+    this->channels_ = bottom[0]->shape(1);
   // 读取分母附加项
-  eps_ = param.eps();
+  this->eps_ = param.eps();
   if (this->blobs_.size() > 0) {
     LOG(INFO) << "Skipping parameter initialization";
   } else {
@@ -34,13 +34,13 @@ void BatchNormLayer<Dtype>::LayerSetUp(const vector<Blob<Dtype>*>& bottom,
     this->blobs_.resize(3);
     // 针对每个 channel 分别存储均值、方差和滑动平均衰减系数
     vector<int> sz;
-    sz.push_back(channels_);
-    // 设置均值的尺寸 (channels, )
+    sz.push_back(this->channels_);
+    // 设置均值和的尺寸 (channels, )
     this->blobs_[0].reset(new Blob<Dtype>(sz));
-    // 设置方差的尺寸 (channels, )
+    // 设置方差和的尺寸 (channels, )
     this->blobs_[1].reset(new Blob<Dtype>(sz));
     sz[0] = 1;
-    // 设置滑动平均衰减系数的尺寸 (1, )
+    // 设置滑动平均衰减系数和的尺寸 (1, )
     this->blobs_[2].reset(new Blob<Dtype>(sz));
     // 将该层的内部参数全部设置为 0
     for (int i = 0; i < 3; ++i) {
@@ -50,7 +50,7 @@ void BatchNormLayer<Dtype>::LayerSetUp(const vector<Blob<Dtype>*>& bottom,
   }
   // Mask statistics from optimization by setting local learning rates
   // for mean, variance, and the bias correction to zero.
-  // 设置优化均值、方差和偏置的本地学习率
+  // 设置优化均值、方差和偏置的本地学习率，因为方差、均值和偏置不需要学习
   for (int i = 0; i < this->blobs_.size(); ++i) {
     if (this->layer_param_.param_size() == i) {
       // 如果该层的 ParamSpec 参数数目不够，则添加参数，并且设置学习动量为 0
@@ -69,39 +69,39 @@ void BatchNormLayer<Dtype>::Reshape(const vector<Blob<Dtype>*>& bottom,
       const vector<Blob<Dtype>*>& top) {
   // 检查 channel 个数是否合格
   if (bottom[0]->num_axes() >= 1)
-    CHECK_EQ(bottom[0]->shape(1), channels_);
+    CHECK_EQ(bottom[0]->shape(1), this->channels_);
   // 设置 top blob 的形状大小
   top[0]->ReshapeLike(*bottom[0]);
 
   vector<int> sz;
-  sz.push_back(channels_);
+  sz.push_back(this->channels_);
   // 设置均值的尺寸
-  mean_.Reshape(sz);
+  this->mean_.Reshape(sz);
   // 设置方差的尺寸
-  variance_.Reshape(sz);
+  this->variance_.Reshape(sz);
   // 设置中间变量的尺寸
-  temp_.ReshapeLike(*bottom[0]);
+  this->temp_.ReshapeLike(*bottom[0]);
   // 设置 x_norm_ 的尺寸
-  x_norm_.ReshapeLike(*bottom[0]);
+  this->x_norm_.ReshapeLike(*bottom[0]);
   sz[0] = bottom[0]->shape(0);
   // 设置 batch_sum_multiplier_ 的尺寸
   this->batch_sum_multiplier_.Reshape(sz);
 
   // 获取一张输入图片的 saptial_dim (height * width)
-  int spatial_dim = bottom[0]->count()/(channels_*bottom[0]->shape(0));
-  if (spatial_sum_multiplier_.num_axes() == 0 ||
-      spatial_sum_multiplier_.shape(0) != spatial_dim) {
+  int spatial_dim = bottom[0]->count()/(this->channels_ * bottom[0]->shape(0));
+  if (this->spatial_sum_multiplier_.num_axes() == 0 ||
+      this->spatial_sum_multiplier_.shape(0) != spatial_dim) {
     sz[0] = spatial_dim;
     // 设置 spatial_sum_multiplier 的形状
-    spatial_sum_multiplier_.Reshape(sz);
+    this->spatial_sum_multiplier_.Reshape(sz);
     // 获取读写 spatial_sum_multiplier_ 指针
-    Dtype* multiplier_data = spatial_sum_multiplier_.mutable_cpu_data();
+    Dtype* multiplier_data = this->spatial_sum_multiplier_.mutable_cpu_data();
     // 将 spatial_sum_multiplier_ 所有元素全部设置为 1
-    caffe_set(spatial_sum_multiplier_.count(), Dtype(1), multiplier_data);
+    caffe_set(this->spatial_sum_multiplier_.count(), Dtype(1), multiplier_data);
   }
 
   // 设置通道的个数
-  int numbychans = this->channels_*bottom[0]->shape(0);
+  int numbychans = this->channels_ * bottom[0]->shape(0);
   if (this->num_by_chans_.num_axes() == 0 ||
       this->num_by_chans_.shape(0) != numbychans) {
     sz[0] = numbychans;
@@ -162,8 +162,8 @@ void BatchNormLayer<Dtype>::Forward_cpu(const vector<Blob<Dtype>*>& bottom,
         this->spatial_sum_multiplier_.cpu_data(), 0.,
         this->num_by_chans_.mutable_cpu_data());
     // 数学表达式：mean_ = Trans(num_by_chans) * batch_sum_multiplier
-    // num_by_chans_ 是 (num, channels_)
-    // batch_sum_multiplier_ 是 (num, 1)
+    // num_by_chans_ 是 (num,   channels_)
+    // batch_sum_multiplier_ 是 (num, 1)，元素全为 1
     // mean_ 是 (channels_, 1)
     // 最终得到每个 channel 的平均值
     caffe_cpu_gemv<Dtype>(CblasTrans, num, this->channels_, 1.,
@@ -196,7 +196,7 @@ void BatchNormLayer<Dtype>::Forward_cpu(const vector<Blob<Dtype>*>& bottom,
       spatial_dim, 1, -1, this->num_by_chans_.cpu_data(),
       this->spatial_sum_multiplier_.cpu_data(), 1., top_data);
 
-  // 如果 use_global_stats_ 为真
+  // 如果 use_global_stats_ 为假
   if (!this->use_global_stats_) {
     // compute variance using var(X) = E((X-EX)^2)
     // caffe_powx 是 element-wise 操作，这里实现对每个元素平方
@@ -410,7 +410,7 @@ void BatchNormLayer<Dtype>::Backward_cpu(const vector<Blob<Dtype>*>& top,
   // note: temp_ still contains sqrt(var(X)+eps), computed during the forward
   // pass.
   // 实现 element-wise 元素相除
-  caffe_div(temp_.count(), bottom_diff, temp_.cpu_data(), bottom_diff);
+  caffe_div(temp_.count(), bottom_diff, this->temp_.cpu_data(), bottom_diff);
 }
 
 

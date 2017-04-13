@@ -15,13 +15,17 @@ namespace caffe {
  *
  * TODO(dox): thorough documentation for Forward, Backward, and proto params.
  */
+// 将一个输入 Blob 沿着它的 num 或 channel 维度对其进行分片，输出多个分片后的 Blob
 template <typename Dtype>
 class SliceLayer : public Layer<Dtype> {
  public:
+  // 显示构造函数
   explicit SliceLayer(const LayerParameter& param)
       : Layer<Dtype>(param) {}
+  // 层设置函数
   virtual void LayerSetUp(const vector<Blob<Dtype>*>& bottom,
       const vector<Blob<Dtype>*>& top);
+  // 层变形函数
   virtual void Reshape(const vector<Blob<Dtype>*>& bottom,
       const vector<Blob<Dtype>*>& top);
 
@@ -40,10 +44,10 @@ class SliceLayer : public Layer<Dtype> {
       const vector<bool>& propagate_down, const vector<Blob<Dtype>*>& bottom);
 
   int count_;
-  int num_slices_;
-  int slice_size_;
-  int slice_axis_;
-  vector<int> slice_point_;
+  int num_slices_; // 每类分片的数目
+  int slice_size_; // 单位分片的尺寸
+  int slice_axis_; // 执行分片的轴
+  vector<int> slice_point_; // 分片的点
 };
 
 }  // namespace caffe
